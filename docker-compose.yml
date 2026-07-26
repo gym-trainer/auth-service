@@ -1,0 +1,38 @@
+services:
+  auth_db:
+    image: postgres:16-alpine
+    container_name: auth_postgres_db
+    env_file:
+      - .env
+    volumes:
+      - postgres_auth_data:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - auth_internal_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+
+  auth_service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: go_auth_service
+    ports:
+      - "80:80"
+    env_file:
+      - .env
+    depends_on:
+      auth_db:
+        condition: service_healthy
+    networks:
+      - auth_internal_network
+
+networks:
+  auth_internal_network:
+    driver: bridge
+
+volumes:
+  postgres_auth_data:
