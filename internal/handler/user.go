@@ -33,18 +33,20 @@ func (h *UserHandler) Register(c *gin.Context) {
 		return
 	}
 
-	result, err := h.service.Register(c, input)
+	result, err := h.service.Register(c.Request.Context(), input)
 	if err != nil {
 		if errors.Is(err, model.ErrEmailAlreadyExists) {
 			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": model.ErrInternalServer.Error()})
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": model.ErrInternalServer.Error(),
+		})
 		return
 	}
 
 	setRefreshCookie(c, result.RefreshToken)
 	c.JSON(http.StatusCreated, model.AuthResponse{
-		User:        result.User,
 		AccessToken: result.AccessToken,
 	})
 }
@@ -57,19 +59,49 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
-	result, err := h.service.Login(c, input)
+	result, err := h.service.Login(c.Request.Context(), input)
 	if err != nil {
 		if errors.Is(err, model.ErrInvalidCredentials) {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
 		}
 
-		c.JSON(http.StatusInternalServerError, gin.H{"error": model.ErrInternalServer.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": model.ErrInternalServer.Error(),
+		})
+		return
 	}
 
 	setRefreshCookie(c, result.RefreshToken)
 	c.JSON(http.StatusOK, model.AuthResponse{
-		User:        result.User,
+		AccessToken: result.AccessToken,
+	})
+}
+
+func (h *UserHandler) Refresh(c *gin.Context) {
+	refreshToken, err := c.Cookie("refresh_token")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": model.ErrUnauthorized.Error(),
+		})
+		return
+	}
+
+	result, err := h.service.Refresh(c.Request.Context(), refreshToken)
+	if err != nil {
+		if errors.Is(err, model.ErrUnauthorized) {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": model.ErrInternalServer.Error(),
+		})
+		return
+	}
+
+	setRefreshCookie(c, result.RefreshToken)
+	c.JSON(http.StatusOK, model.AuthResponse{
 		AccessToken: result.AccessToken,
 	})
 }

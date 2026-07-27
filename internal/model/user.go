@@ -26,6 +26,11 @@ type AuthResult struct {
 }
 
 type AuthResponse struct {
-	User        *User  `json:"user"`
 	AccessToken string `json:"access_token"`
+}
+
+type RefreshToken struct {
+	Token     string
+	UserID    int
+	ExpiresAt time.Time
 }

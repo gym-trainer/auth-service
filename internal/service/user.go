@@ -117,3 +117,24 @@ func (s *UserService) Login(
 
 	return result, nil
 }
+
+func (s *UserService) Refresh(
+	ctx context.Context,
+	refreshToken string,
+) (*model.AuthResult, error) {
+	token, err := s.tokenRepo.GetRefreshToken(ctx, refreshToken)
+	if err != nil {
+		return nil, err
+	}
+	if token == nil {
+		return nil, model.ErrUnauthorized
+	}
+
+	timeNow := time.Now()
+	s.tokenRepo.DeleteRefreshToken(ctx, refreshToken)
+	if token.ExpiresAt.Before(timeNow) {
+		return nil, model.ErrUnauthorized
+	}
+
+	return s.issueTokens(ctx, token.UserID)
+}
