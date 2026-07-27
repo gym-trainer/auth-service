@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gym-trainer/auth-service/internal/model"
@@ -104,4 +105,25 @@ func (h *UserHandler) Refresh(c *gin.Context) {
 	c.JSON(http.StatusOK, model.AuthResponse{
 		AccessToken: result.AccessToken,
 	})
+}
+
+func (h *UserHandler) Logout(c *gin.Context) {
+	refreshToken, _ := c.Cookie("refresh_token")
+
+	var accessToken string
+	authHeader := c.GetHeader("Authorization")
+
+	if len(authHeader) > 7 && strings.HasPrefix(authHeader, "Bearer ") {
+		accessToken = authHeader[7:]
+	}
+
+	err := h.service.Logout(c.Request.Context(), accessToken, refreshToken)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": model.ErrInternalServer.Error()})
+		return
+	}
+
+	c.SetCookie("refresh_token", "", -1, "/", "", false, true)
+
+	c.JSON(http.StatusOK, gin.H{"message": "successfully logged out"})
 }

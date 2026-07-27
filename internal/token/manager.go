@@ -55,3 +55,23 @@ func (m *Maker) CreateRefreshToken() (string, error) {
 
 	return base64.RawURLEncoding.EncodeToString(bytes), nil
 }
+
+func (m *Maker) VerifyToken(tokenString string) (jwt.MapClaims, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return &m.privateKey.PublicKey, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return nil, fmt.Errorf("invalid token claims")
+	}
+
+	return claims, nil
+}

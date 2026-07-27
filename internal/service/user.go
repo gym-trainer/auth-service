@@ -138,3 +138,32 @@ func (s *UserService) Refresh(
 
 	return s.issueTokens(ctx, token.UserID)
 }
+
+func (s *UserService) Logout(
+	ctx context.Context,
+	accessToken, refreshToken string,
+) error {
+	if refreshToken != "" {
+		_ = s.tokenRepo.DeleteRefreshToken(ctx, refreshToken)
+	}
+
+	if accessToken != "" {
+		claims, err := s.maker.VerifyToken(accessToken)
+
+		if err == nil {
+			jti, ok1 := claims["jti"].(string)
+			expFloat, ok2 := claims["exp"].(float64)
+
+			if ok1 && ok2 {
+				expiresAt := time.Unix(int64(expFloat), 0)
+				timeRemaining := time.Until(expiresAt)
+
+				if timeRemaining > 0 {
+					_ = s.tokenRepo.BlacklistAccessToken(ctx, jti, timeRemaining)
+				}
+			}
+		}
+	}
+
+	return nil
+}

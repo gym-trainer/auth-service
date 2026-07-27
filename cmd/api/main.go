@@ -13,6 +13,7 @@ import (
 	"github.com/gym-trainer/auth-service/internal/storage"
 	"github.com/gym-trainer/auth-service/internal/token"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -32,6 +33,15 @@ func main() {
 		log.Fatalf("Failed to ping to database: %v", err)
 	}
 	log.Printf("Database connection established")
+
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: cfg.RedisAddr,
+	})
+	if err := redisClient.Ping(ctx).Err(); err != nil {
+		log.Fatalf("Failed to connect to Redis: %v", err)
+	}
+	log.Println("Redis connection established")
+	defer redisClient.Close()
 
 	privateKeyBytes, err := os.ReadFile(cfg.PrivateKeyPath)
 	if err != nil {
@@ -54,7 +64,7 @@ func main() {
 	}
 
 	userRepo := storage.NewUserStorage(pool)
-	tokenRepo := storage.NewTokenStorage(pool)
+	tokenRepo := storage.NewTokenStorage(pool, redisClient)
 	userService := service.NewUserService(userRepo, tokenRepo, maker)
 	userHandler := handler.NewUserHandler(userService)
 
@@ -64,6 +74,7 @@ func main() {
 	router.POST("/login", userHandler.Login)
 	router.GET("/.well-known/jwks.json", jwksHandler.ServeJWKS)
 	router.POST("/refresh", userHandler.Refresh)
+	router.POST("/logout", userHandler.Logout)
 
 	log.Printf("Starting server on port %s", cfg.Port)
 	if err := router.Run(":" + cfg.Port); err != nil {

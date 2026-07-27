@@ -8,15 +8,18 @@ import (
 	"github.com/gym-trainer/auth-service/internal/model"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 )
 
 type TokenStorage struct {
-	db *pgxpool.Pool
+	db    *pgxpool.Pool
+	redis *redis.Client
 }
 
-func NewTokenStorage(db *pgxpool.Pool) *TokenStorage {
+func NewTokenStorage(db *pgxpool.Pool, redisClient *redis.Client) *TokenStorage {
 	return &TokenStorage{
-		db: db,
+		db:    db,
+		redis: redisClient,
 	}
 }
 
@@ -78,4 +81,9 @@ func (s *TokenStorage) DeleteRefreshToken(
 	}
 
 	return nil
+}
+
+func (s *TokenStorage) BlacklistAccessToken(ctx context.Context, jti string, expiresIn time.Duration) error {
+	err := s.redis.Set(ctx, jti, "1", expiresIn).Err()
+	return err
 }

@@ -15,6 +15,19 @@ services:
       timeout: 5s
       retries: 5
 
+  auth_redis:
+    image: redis:7-alpine
+    container_name: auth_redis_cache
+    ports:
+      - "6379:6379"
+    networks:
+      - auth_internal_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+
   auth_service:
     build:
       context: .
@@ -26,6 +39,8 @@ services:
       - .env
     depends_on:
       auth_db:
+        condition: service_healthy
+      auth_redis:
         condition: service_healthy
     volumes:
       - ./keys:/app/keys

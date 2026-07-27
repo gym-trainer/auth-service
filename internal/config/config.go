@@ -8,6 +8,7 @@ import (
 
 type AppConfig struct {
 	DatabaseURL          string
+	RedisAddr            string
 	Port                 string
 	AccessTokenDuration  time.Duration
 	RefreshTokenDuration time.Duration
@@ -19,6 +20,11 @@ func Load() (*AppConfig, error) {
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		return nil, fmt.Errorf("DATABASE_URL environment variable is required")
+	}
+
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "auth_redis:6379"
 	}
 
 	port := os.Getenv("PORT")
@@ -38,6 +44,7 @@ func Load() (*AppConfig, error) {
 
 	return &AppConfig{
 		DatabaseURL:          dbURL,
+		RedisAddr:            redisAddr,
 		Port:                 port,
 		AccessTokenDuration:  15 * time.Minute,
 		RefreshTokenDuration: 7 * 24 * time.Hour,
