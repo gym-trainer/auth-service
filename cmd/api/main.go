@@ -63,6 +63,7 @@ func main() {
 	router.POST("/register", userHandler.Register)
 	router.POST("/login", userHandler.Login)
 	router.GET("/.well-known/jwks.json", jwksHandler.ServeJWKS)
+	router.POST("/refresh", userHandler.Refresh)
 
 	log.Printf("Starting server on port %s", cfg.Port)
 	if err := router.Run(":" + cfg.Port); err != nil {
