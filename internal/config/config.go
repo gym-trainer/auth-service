@@ -12,6 +12,7 @@ type AppConfig struct {
 	AccessTokenDuration  time.Duration
 	RefreshTokenDuration time.Duration
 	PrivateKeyPath       string
+	PublicKeyPath        string
 }
 
 func Load() (*AppConfig, error) {
@@ -30,11 +31,17 @@ func Load() (*AppConfig, error) {
 		privateKeyPath = "keys/id_rsa"
 	}
 
+	publicKeyPath := os.Getenv("PUBLIC_KEY_PATH")
+	if publicKeyPath == "" {
+		publicKeyPath = "keys/id_rsa.pub"
+	}
+
 	return &AppConfig{
 		DatabaseURL:          dbURL,
 		Port:                 port,
 		AccessTokenDuration:  15 * time.Minute,
 		RefreshTokenDuration: 7 * 24 * time.Hour,
 		PrivateKeyPath:       privateKeyPath,
+		PublicKeyPath:        publicKeyPath,
 	}, nil
 }

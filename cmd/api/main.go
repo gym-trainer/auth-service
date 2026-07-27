@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/gym-trainer/auth-service/internal/config"
 	"github.com/gym-trainer/auth-service/internal/handler"
 	"github.com/gym-trainer/auth-service/internal/service"
@@ -37,6 +38,16 @@ func main() {
 		log.Fatalf("Failed to read private key file at %s: %v", cfg.PrivateKeyPath, err)
 	}
 
+	publicKeyBytes, err := os.ReadFile(cfg.PublicKeyPath)
+	if err != nil {
+		log.Fatalf("Failed to read public key file: %v", err)
+	}
+	publicKey, err := jwt.ParseRSAPublicKeyFromPEM(publicKeyBytes)
+	if err != nil {
+		log.Fatalf("Failed to parse public key: %v", err)
+	}
+	jwksHandler := handler.NewJWKSHandler(publicKey)
+
 	maker, err := token.NewMaker(privateKeyBytes)
 	if err != nil {
 		log.Fatalf("Failed to create token maker: %v", err)
@@ -51,7 +62,10 @@ func main() {
 
 	router.POST("/register", userHandler.Register)
 	router.POST("/login", userHandler.Login)
+	router.GET("/.well-known/jwks.json", jwksHandler.ServeJWKS)
 
 	log.Printf("Starting server on port %s", cfg.Port)
-	router.Run(":" + cfg.Port)
+	if err := router.Run(":" + cfg.Port); err != nil {
+		log.Fatalf("Failed to run server: %v", err)
+	}
 }
