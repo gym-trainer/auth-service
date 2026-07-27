@@ -27,6 +27,8 @@ services:
     depends_on:
       auth_db:
         condition: service_healthy
+    volumes:
+      - ./keys:/app/keys
     networks:
       - auth_internal_network
 

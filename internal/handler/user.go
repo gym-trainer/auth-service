@@ -19,6 +19,12 @@ func NewUserHandler(service *service.UserService) *UserHandler {
 	}
 }
 
+func setRefreshCookie(c *gin.Context, token string) {
+	maxAge := 7 * 24 * 60 * 60
+
+	c.SetCookie("refresh_token", token, maxAge, "/", "", false, true)
+}
+
 func (h *UserHandler) Register(c *gin.Context) {
 	var input model.RegisterInput
 
@@ -27,7 +33,7 @@ func (h *UserHandler) Register(c *gin.Context) {
 		return
 	}
 
-	user, err := h.service.Register(c, input)
+	result, err := h.service.Register(c, input)
 	if err != nil {
 		if errors.Is(err, model.ErrEmailAlreadyExists) {
 			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
@@ -36,7 +42,11 @@ func (h *UserHandler) Register(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, user)
+	setRefreshCookie(c, result.RefreshToken)
+	c.JSON(http.StatusCreated, model.AuthResponse{
+		User:        result.User,
+		AccessToken: result.AccessToken,
+	})
 }
 
 func (h *UserHandler) Login(c *gin.Context) {
@@ -47,7 +57,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
-	user, err := h.service.Login(c, input)
+	result, err := h.service.Login(c, input)
 	if err != nil {
 		if errors.Is(err, model.ErrInvalidCredentials) {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
@@ -57,5 +67,9 @@ func (h *UserHandler) Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": model.ErrInternalServer.Error()})
 	}
 
-	c.JSON(http.StatusOK, user)
+	setRefreshCookie(c, result.RefreshToken)
+	c.JSON(http.StatusOK, model.AuthResponse{
+		User:        result.User,
+		AccessToken: result.AccessToken,
+	})
 }

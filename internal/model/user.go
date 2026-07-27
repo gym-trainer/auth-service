@@ -18,3 +18,14 @@ type LoginInput struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
+
+type AuthResult struct {
+	User         *User
+	AccessToken  string
+	RefreshToken string
+}
+
+type AuthResponse struct {
+	User        *User  `json:"user"`
+	AccessToken string `json:"access_token"`
+}
