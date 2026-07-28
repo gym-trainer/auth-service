@@ -32,7 +32,7 @@ func NewUserService(
 
 func (s *UserService) issueTokens(
 	ctx context.Context,
-	userID int,
+	userID string,
 ) (*model.AuthResult, error) {
 	timeNow := time.Now()
 

@@ -3,7 +3,7 @@ package model
 import "time"
 
 type User struct {
-	ID        int       `json:"id"`
+	ID        string    `json:"id"`
 	Email     string    `json:"email"`
 	Password  string    `json:"-"`
 	CreatedAt time.Time `json:"created_at"`
@@ -31,6 +31,6 @@ type AuthResponse struct {
 
 type RefreshToken struct {
 	Token     string
-	UserID    int
+	UserID    string
 	ExpiresAt time.Time
 }

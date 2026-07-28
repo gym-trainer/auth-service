@@ -25,7 +25,7 @@ func NewMaker(privateKeyPEM []byte) (*Maker, error) {
 }
 
 func (m *Maker) CreateAccessToken(
-	userID int,
+	userID string,
 	createdAt time.Time,
 	expiresAt time.Time,
 ) (string, error) {

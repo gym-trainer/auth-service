@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
 	"github.com/gym-trainer/auth-service/internal/model"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -25,14 +26,16 @@ func (s *UserStorage) CreateUser(
 	email, passwordHash string,
 ) (*model.User, error) {
 	query := `
-		INSERT INTO users (email, password)
-		VALUES ($1, $2)
+		INSERT INTO users (id, email, password)
+		VALUES ($1, $2, $3)
 		RETURNING id, email, password, created_at
 	`
 
 	var user model.User
 
-	err := s.db.QueryRow(ctx, query, email, passwordHash).Scan(
+	newUserID := uuid.New().String()
+
+	err := s.db.QueryRow(ctx, query, newUserID, email, passwordHash).Scan(
 		&user.ID,
 		&user.Email,
 		&user.Password,

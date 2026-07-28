@@ -26,7 +26,7 @@ func NewTokenStorage(db *pgxpool.Pool, redisClient *redis.Client) *TokenStorage 
 func (s *TokenStorage) StoreRefreshToken(
 	ctx context.Context,
 	token string,
-	userID int,
+	userID string,
 	expiresAt time.Time,
 ) error {
 	query := `
